@@ -11,7 +11,7 @@ import com.cinedrive.tv.ui.detail.MediaDetailScreen
 import com.cinedrive.tv.ui.grid.MoviesGridScreen
 import com.cinedrive.tv.ui.grid.ShowsGridScreen
 import com.cinedrive.tv.ui.home.HomeScreen
-import com.cinedrive.tv.ui.player.PlayerPlaceholderScreen
+import com.cinedrive.tv.ui.player.PlayerScreen
 import com.cinedrive.tv.ui.show.ShowDetailScreen
 
 /**
@@ -101,7 +101,17 @@ fun CineDriveNavHost() {
             route = Routes.PLAYER,
             arguments = listOf(navArgument("itemId") { type = NavType.LongType }),
         ) {
-            PlayerPlaceholderScreen(onBack = { navController.popBackStack() })
+            PlayerScreen(
+                onBack = { navController.popBackStack() },
+                // Auto-next-episode: swap the current player entry for the
+                // next one so BACK from the new episode returns to browsing,
+                // not to the episode just finished.
+                onPlayNext = { id ->
+                    navController.navigate(Routes.player(id)) {
+                        popUpTo(Routes.PLAYER) { inclusive = true }
+                    }
+                },
+            )
         }
     }
 }

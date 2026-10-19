@@ -19,23 +19,28 @@ via LibVLC's bundled codecs — no server, no transcoding, no accounts.
 | 1 | ✅ | Gradle + toolchain: AGP 8.10.1 / Gradle 8.11.1 / Kotlin 2.0.21, Compose BOM 2024.12.01, tv-material 1.0.1, LibVLC 3.7.7, Room 2.6.1 (KSP), Hilt 2.52, TV manifest + USB permissions |
 | 2 | ✅ | USB storage engine: `StorageVolumeCallback` (API 30+) / `ACTION_MEDIA_MOUNTED` receiver (API 29), volume-UUID identity, all-files-access gate, recursive scanner with sidecar binding (.srt/.vtt/poster/fanart/nfo) |
 | 3 | ✅ | Room library cache: volumes / media_items / shows, `NfoParser` (XmlPullParser: movie / episodedetails / tvshow, modern + legacy ratings), `MediaClassifier` (S01E02 & 1x02 heuristics, Season-folder promotion, tvshow.nfo inheritance), progress-preserving re-scan, schema export |
-| 4 | 🔜 | TV browse UI: movie/TV grids, show/season/episode drill-down, D-pad focus management, detail pages |
-| 5 | 🔜 | Player: LibVLC integration behind a `PlayerEngine` interface, D-pad seek (±10 s / ±1 min), quick settings (audio/subtitle tracks, subtitle offset), 90 % watched rule, auto-next-episode, resume from Room |
+| 4 | ✅ | TV browse UI: permission gate, home rows (continue-watching / movies / TV), movie & TV grids, show→season→episode drill-down, NFO detail pages, D-pad focus cards, cross-volume queries, LibrarySyncController |
+| 5 | ✅ | Player: LibVLC 3.7.7 behind a `PlayerEngine` interface, D-pad transport (±10 s / ±1 min, long-press OK = settings), quick settings (audio/subtitle tracks, ±100 ms offsets), 90 % watched rule, auto-next-episode, resume from Room, FLAG_KEEP_SCREEN_ON |
 
 ## Architecture
 
 ```
 ui (Compose TV)  →  domain (models + repository interfaces)
-                        ↓
-                   data ── storage/   UsbVolumeWatcher, StoragePermissionManager
-                        ├─ scanner/   VideoFileScanner, MediaClassifier
-                        ├─ metadata/  NfoParser (XmlPullParser)
-                        ├─ indexer/   MediaIndexer (scan → parse → classify → Room tx)
-                        ├─ db/        Room: volumes, media_items, shows
-                        └─ repository/ StorageRepositoryImpl, LibraryRepositoryImpl
+     │                 ├─ player/    PlaybackMath, EpisodeNavigator (pure rules)
+     │                 ↓
+     ├─ playback/      PlayerEngine interface + LibVlcPlayerEngine
+     ↓
+data ── storage/   UsbVolumeWatcher, StoragePermissionManager
+     ├─ scanner/   VideoFileScanner, MediaClassifier
+     ├─ metadata/  NfoParser (XmlPullParser)
+     ├─ indexer/   MediaIndexer (scan → parse → classify → Room tx)
+     ├─ db/        Room: volumes, media_items, shows
+     └─ repository/ StorageRepositoryImpl, LibraryRepositoryImpl
 ```
 
 MVVM + Clean Architecture, Coroutines/Flow end-to-end, Hilt DI, single Activity.
+The player UI only ever sees `PlayerEngine` — the LibVLC backend is swappable
+(a Media3 implementation would not touch ui/ or domain/).
 
 ## Key design decisions
 
