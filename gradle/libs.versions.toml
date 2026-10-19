@@ -52,6 +52,9 @@ coil = "2.7.0"
 junit = "4.13.2"
 androidxJunit = "1.2.1"
 espresso = "3.6.1"
+# Real XmlPullParser impl for JVM unit tests: the mockable android.jar stubs
+# XmlPullParserFactory.newInstance() to throw, so NfoParser tests need kxml2.
+kxml2 = "2.3.0"
 
 [libraries]
 # --- AndroidX core ---
@@ -105,6 +108,7 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+kxml2 = { group = "net.sf.kxml", name = "kxml2", version.ref = "kxml2" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

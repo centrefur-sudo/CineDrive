@@ -159,6 +159,9 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.room.testing)
+    // Real XmlPullParser (kxml2) for JVM tests — the mockable android.jar
+    // stubs XmlPullParserFactory.newInstance() to throw "not mocked".
+    testImplementation(libs.kxml2)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(platform(libs.compose.bom))
