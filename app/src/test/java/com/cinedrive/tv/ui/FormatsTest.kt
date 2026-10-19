@@ -28,7 +28,7 @@ class FormatsTest {
     }
 
     @Test
-    fun `fraction is clamped to 0..1`() {
+    fun `fraction is clamped into the zero-one range`() {
         assertEquals(0.5f, progressFraction(30 * 60_000L, 60)!!, 0.0001f)
         assertEquals(1f, progressFraction(10 * 60 * 60_000L, 60)!!, 0.0001f)
     }
