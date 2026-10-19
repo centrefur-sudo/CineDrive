@@ -34,13 +34,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.cinedrive.tv.domain.model.StorageAccessLevel
 import com.cinedrive.tv.domain.model.UsbVolume
-import com.cinedrive.tv.domain.model.VideoFile
 import com.cinedrive.tv.ui.storage.StorageViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
- * Step 2 smoke-test screen — proves the storage engine on real hardware:
- * permission gate → live USB volume list → recursive index with binding.
+ * Step 3 smoke-test screen — proves the storage + library engine on real
+ * hardware: permission gate → live USB volume list → scan/NFO/classify →
+ * Room cache with per-volume library stats.
  * Replaced by the full TV browse UI in Step 4.
  */
 @AndroidEntryPoint
@@ -67,8 +67,8 @@ private val Ok = Color(0xFF8BC34A)
 private fun StorageSmokeScreen(viewModel: StorageViewModel) {
     val access by viewModel.access.collectAsState()
     val volumes by viewModel.volumes.collectAsState()
-    val indexCounts by viewModel.indexCounts.collectAsState()
-    val firstFiles by viewModel.firstFiles.collectAsState()
+    val libraryStats by viewModel.libraryStats.collectAsState()
+    val cachedItems by viewModel.cachedItems.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Re-check permissions and pick up newly attached drives on every resume.
@@ -85,7 +85,7 @@ private fun StorageSmokeScreen(viewModel: StorageViewModel) {
             .padding(32.dp)
     ) {
         Text(
-            text = "CineDrive · Step 2 — storage engine",
+            text = "CineDrive · Step 3 — library database",
             color = Accent,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
@@ -95,8 +95,8 @@ private fun StorageSmokeScreen(viewModel: StorageViewModel) {
         when (access) {
             StorageAccessLevel.GRANTED -> VolumePanel(
                 volumes = volumes,
-                indexCounts = indexCounts,
-                firstFiles = firstFiles,
+                libraryStats = libraryStats,
+                cachedItems = cachedItems,
                 onRescan = viewModel::rescan,
             )
 
@@ -137,8 +137,8 @@ private fun PermissionGate(
 @Composable
 private fun VolumePanel(
     volumes: List<UsbVolume>,
-    indexCounts: Map<String, Int>,
-    firstFiles: List<VideoFile>,
+    libraryStats: Map<String, String>,
+    cachedItems: Int,
     onRescan: () -> Unit,
 ) {
     Row(
@@ -148,7 +148,7 @@ private fun VolumePanel(
     ) {
         Button(onClick = onRescan) { Text("Rescan") }
         Text(
-            text = "Attached USB volumes: ${volumes.size}",
+            text = "Attached USB volumes: ${volumes.size}  ·  Room cache: $cachedItems items",
             color = TextPrimary,
             fontSize = 16.sp
         )
@@ -173,18 +173,10 @@ private fun VolumePanel(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(text = volume.mountPath, color = TextSecondary, fontSize = 13.sp)
-                indexCounts[volume.uuid]?.let {
-                    Text(text = "Indexed videos: $it", color = Accent, fontSize = 13.sp)
+                libraryStats[volume.uuid]?.let {
+                    Text(text = "Indexed: $it", color = Accent, fontSize = 13.sp)
                 }
             }
-        }
-        items(firstFiles, key = { it.path }) { file ->
-            Text(
-                text = "   ↳ ${file.displayName}" +
-                    if (file.subtitles.isNotEmpty()) "  (+${file.subtitles.size} subs)" else "",
-                color = TextSecondary,
-                fontSize = 13.sp
-            )
         }
     }
 }

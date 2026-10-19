@@ -24,4 +24,10 @@ data class VideoFile(
     val fanartPath: String? = null,
     /** &lt;name&gt;.nfo next to the file, or movie.nfo in the same directory. */
     val nfoPath: String? = null,
+    /**
+     * Absolute path of the nearest tvshow.nfo above (or beside) this file,
+     * inherited down the directory tree — the show root marker used by the
+     * Step 3 classifier/indexer for episode grouping.
+     */
+    val showNfoPath: String? = null,
 )

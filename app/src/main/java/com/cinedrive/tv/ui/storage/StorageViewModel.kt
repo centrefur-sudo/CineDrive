@@ -3,11 +3,11 @@ package com.cinedrive.tv.ui.storage
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cinedrive.tv.data.storage.StoragePermissionManager
 import com.cinedrive.tv.domain.model.StorageAccessLevel
 import com.cinedrive.tv.domain.model.UsbVolume
-import com.cinedrive.tv.domain.model.VideoFile
+import com.cinedrive.tv.domain.repository.LibraryRepository
 import com.cinedrive.tv.domain.repository.StorageRepository
-import com.cinedrive.tv.data.storage.StoragePermissionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -20,8 +20,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Step 2 smoke-test ViewModel: proves the engine end-to-end on real hardware
- * (watcher → permission gate → scanner) before the browse UI exists.
+ * Step 3 smoke-test ViewModel: proves the full pipeline end-to-end on real
+ * hardware — volume watcher → permission gate → scanner → NFO parse →
+ * classifier → Room transaction. The per-volume stats line reads straight
+ * from [LibraryIndexResult]; the continue-watching count proves the
+ * playback-state columns survive a rescan once Step 5 writes progress.
  * Replaced by the browse UI's ViewModels in Step 4.
  *
  * NOTE: exposing permission Intents through the ViewModel is a deliberate
@@ -31,6 +34,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class StorageViewModel @Inject constructor(
     private val storage: StorageRepository,
+    private val library: LibraryRepository,
     private val permissions: StoragePermissionManager,
 ) : ViewModel() {
 
@@ -40,13 +44,13 @@ class StorageViewModel @Inject constructor(
     private val _access = MutableStateFlow(storage.currentAccessLevel())
     val access: StateFlow<StorageAccessLevel> = _access.asStateFlow()
 
-    /** Files indexed per volume uuid, for the smoke-test panel. */
-    private val _indexCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
-    val indexCounts: StateFlow<Map<String, Int>> = _indexCounts.asStateFlow()
+    /** Human-readable per-volume library stats, e.g. "3 movies · 2 shows · 12 eps". */
+    private val _libraryStats = MutableStateFlow<Map<String, String>>(emptyMap())
+    val libraryStats: StateFlow<Map<String, String>> = _libraryStats.asStateFlow()
 
-    /** Peek at the first results, to eyeball subtitle/artwork binding. */
-    private val _firstFiles = MutableStateFlow<List<VideoFile>>(emptyList())
-    val firstFiles: StateFlow<List<VideoFile>> = _firstFiles.asStateFlow()
+    /** Total items already in the Room cache, across all volumes. */
+    private val _cachedItems = MutableStateFlow(0)
+    val cachedItems: StateFlow<Int> = _cachedItems.asStateFlow()
 
     private val indexed = mutableSetOf<String>()
 
@@ -71,8 +75,7 @@ class StorageViewModel @Inject constructor(
 
     fun rescan() {
         indexed.clear()
-        _indexCounts.value = emptyMap()
-        _firstFiles.value = emptyList()
+        _libraryStats.value = emptyMap()
         indexNewVolumes()
     }
 
@@ -83,12 +86,18 @@ class StorageViewModel @Inject constructor(
                 .filter { it.isMounted && it.uuid !in indexed }
                 .forEach { volume ->
                     try {
-                        val files = storage.indexVolume(volume.uuid)
+                        val result = library.indexVolume(volume.uuid)
                         indexed += volume.uuid
-                        _indexCounts.update { it + (volume.uuid to files.size) }
-                        if (_firstFiles.value.isEmpty()) {
-                            _firstFiles.value = files.take(5)
+                        val parts = buildList {
+                            if (result.movies > 0) add("${result.movies} movies")
+                            if (result.shows > 0) add("${result.shows} shows")
+                            if (result.episodes > 0) add("${result.episodes} eps")
                         }
+                        _libraryStats.update {
+                            it + (volume.uuid to parts.ifEmpty { listOf("empty drive") }
+                                .joinToString(" · "))
+                        }
+                        _cachedItems.value = _cachedItems.value + result.filesScanned
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (error: Throwable) {

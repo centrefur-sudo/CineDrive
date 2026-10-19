@@ -1,0 +1,55 @@
+name: android-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: Unit tests + debug build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # The Gradle wrapper JAR is intentionally not committed (sandbox cannot
+      # run `gradle wrapper` locally) — install the CLI once, generate the
+      # wrapper, then drive every later step through ./gradlew so the
+      # dependency cache applies.
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+          cache-read-only: false
+
+      - name: Generate wrapper
+        run: gradle wrapper --gradle-version 8.11.1
+
+      - name: Unit tests (JVM)
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Assemble debug APKs (per-ABI + universal)
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
+          if-no-files-found: ignore
+
+      - name: Upload debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cinedrive-debug-apks
+          path: app/build/outputs/apk/**/app-*.apk
+          if-no-files-found: error

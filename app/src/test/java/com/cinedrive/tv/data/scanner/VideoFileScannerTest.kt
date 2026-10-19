@@ -103,4 +103,28 @@ class VideoFileScannerTest {
 
         assertEquals(0, files.size)
     }
+
+    @Test
+    fun `episodes inherit tvshow_nfo from show root`() = runTest {
+        val show = File(tmp.newFolder("Shows"), "Gravity Falls")
+        val season = File(show, "Season 01").apply { mkdirs() }
+        File(show, "tvshow.nfo").writeText("show")
+        File(season, "S01E01.mkv").writeText("v")
+        File(season, "S01E02.mkv").writeText("v")
+        // A nested show overrides the inherited marker.
+        val nested = File(show, "Nested Show").apply { mkdirs() }
+        File(nested, "tvshow.nfo").writeText("nested")
+        File(nested, "S01E01.mkv").writeText("v")
+
+        val files = VideoFileScanner().scan(tmp.root, "UUID-6").sortedBy { it.path }
+
+        assertEquals(3, files.size)
+        val season01 = files.filter { it.path.contains("Season 01") }
+        season01.forEach {
+            assertEquals(File(show, "tvshow.nfo").absolutePath, it.showNfoPath)
+        }
+        files.first { it.path.contains("Nested Show") }.let {
+            assertEquals(File(nested, "tvshow.nfo").absolutePath, it.showNfoPath)
+        }
+    }
 }

@@ -45,6 +45,7 @@ class VideoFileScanner @Inject constructor() {
         out: MutableList<VideoFile>,
         onProgress: suspend (Int) -> Unit,
         depth: Int = 0,
+        inheritedShowNfo: File? = null,
     ) {
         coroutineContext.ensureActive()
         if (depth > MAX_DEPTH || dir.name in SKIP_DIRS || dir.name.startsWith(".")) return
@@ -56,6 +57,7 @@ class VideoFileScanner @Inject constructor() {
         val subs = ArrayList<File>()
         val images = ArrayList<File>()
         var movieNfo: File? = null
+        var showNfo: File? = null
 
         for (entry in entries) {
             if (entry.isDirectory) continue
@@ -63,11 +65,16 @@ class VideoFileScanner @Inject constructor() {
                 in VIDEO_EXTS -> videos += entry
                 in SUBTITLE_EXTS -> subs += entry
                 in IMAGE_EXTS -> images += entry
-                NFO_EXT -> if (entry.nameWithoutExtension.equals(MOVIE_NFO, true)) {
-                    movieNfo = entry
+                NFO_EXT -> when {
+                    entry.nameWithoutExtension.equals(MOVIE_NFO, true) -> movieNfo = entry
+                    entry.nameWithoutExtension.equals(TVSHOW_NFO, true) -> showNfo = entry
                 }
             }
         }
+
+        // The nearest tvshow.nfo wins: a Season subfolder inside a show tree
+        // inherits it, a nested show root overrides it.
+        val effectiveShowNfo = showNfo ?: inheritedShowNfo
 
         for (video in videos) {
             val base = video.nameWithoutExtension
@@ -105,13 +112,14 @@ class VideoFileScanner @Inject constructor() {
                     }
                     ?.absolutePath
                     ?: movieNfo?.absolutePath,
+                showNfoPath = effectiveShowNfo?.absolutePath,
             )
         }
         if (videos.isNotEmpty()) onProgress(out.size)
 
         for (child in entries) {
             if (child.isDirectory && child.name !in SKIP_DIRS && !child.name.startsWith(".")) {
-                walkDirectory(child, volumeUuid, out, onProgress, depth + 1)
+                walkDirectory(child, volumeUuid, out, onProgress, depth + 1, effectiveShowNfo)
             }
         }
     }
@@ -133,6 +141,7 @@ class VideoFileScanner @Inject constructor() {
         val POSTER_NAMES = setOf("poster", "cover", "folder")
         val FANART_NAMES = setOf("fanart", "backdrop")
         const val MOVIE_NFO = "movie"
+        const val TVSHOW_NFO = "tvshow"
 
         val SKIP_DIRS = setOf(
             "lost+found", "LOST.DIR", "Android", "\$RECYCLE.BIN",
