@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.update
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.interfaces.IMedia
 import org.videolan.libvlc.util.VLCVideoLayout
 
 /**
@@ -66,14 +67,15 @@ class LibVlcPlayerEngine(
         val mediaUri = if (uri.contains("://")) Uri.parse(uri) else Uri.fromFile(File(uri))
         val media = Media(libVlc, mediaUri)
         media.setHWDecoderEnabled(true, false)
-        subtitleFiles.forEachIndexed { index, path ->
-            // IMedia.Slave type 0 = subtitle. Only the best side-car (first in
-            // the scanner's ordering) is auto-selected; the rest join the
-            // subtitle list for manual selection in quick settings.
-            media.addSlave(SLAVE_TYPE_SUBTITLE, Uri.fromFile(File(path)), index == 0)
-        }
         mediaPlayer.media = media
         media.release()
+        // MediaPlayer.addSlave(type, uri, select) → libvlc_media_add_slave;
+        // the native layer honours `select`, so the best side-car (first in
+        // the scanner's ordering) is auto-selected and the rest join the
+        // subtitle list for manual selection in quick settings.
+        subtitleFiles.forEachIndexed { index, path ->
+            mediaPlayer.addSlave(IMedia.Slave.Type.Subtitle, path, index == 0)
+        }
         playRequested = true
         maybeAttachSurface()
     }
@@ -274,9 +276,6 @@ class LibVlcPlayerEngine(
     }
 
     private companion object {
-        /** org.videolan.libvlc.interfaces.IMedia.Slave.TYPE_SUBTITLE */
-        const val SLAVE_TYPE_SUBTITLE = 0
-
         /** ±60 s delay window, 100 ms per nudge — plenty for lip-sync fixes. */
         const val DELAY_MIN_MS = -60_000L
         const val DELAY_MAX_MS = 60_000L
