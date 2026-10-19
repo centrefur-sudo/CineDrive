@@ -45,6 +45,8 @@ data class MediaItemEntity(
     val subtitles: List<String> = emptyList(),
     val posterPath: String? = null,
     val fanartPath: String? = null,
+    /** Auto-extracted frame (VideoThumbnailer) for titles without sidecar art. */
+    val thumbPath: String? = null,
     val nfoPath: String? = null,
     val resumePositionMs: Long = 0,
     val watched: Boolean = false,

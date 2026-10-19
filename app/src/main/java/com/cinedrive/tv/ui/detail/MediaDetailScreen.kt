@@ -63,7 +63,11 @@ fun MediaDetailScreen(
 
     Box(Modifier.fillMaxSize().background(Bg)) {
         Backdrop(
-            model = artModel(media?.fanartPath ?: media?.posterPath),
+            model = artModel(
+                media?.fanartPath
+                    ?: media?.thumbPath
+                    ?: media?.posterPath
+            ),
             height = 360.dp,
             modifier = Modifier.align(Alignment.TopCenter),
         )
@@ -117,7 +121,9 @@ private fun DetailContent(
                     .clip(RoundedCornerShape(12.dp))
                     .background(Panel),
             ) {
-                val poster = artModel(media.posterPath ?: media.fanartPath)
+                val poster = artModel(
+                    media.posterPath ?: media.thumbPath ?: media.fanartPath
+                )
                 if (poster != null) {
                     AsyncImage(
                         model = poster,

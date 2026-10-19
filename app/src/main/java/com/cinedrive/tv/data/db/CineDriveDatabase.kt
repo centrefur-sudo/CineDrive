@@ -18,6 +18,9 @@ import com.cinedrive.tv.data.db.entity.VolumeEntity
  *  • media_items — every indexed video file + metadata + playback state
  *  • shows       — show root folders for episode grouping
  *
+ * v2: media_items.thumbPath (auto-extracted video frame, nullable) —
+ * migration below is a plain ADD COLUMN, no data touched.
+ *
  * Schema JSON is exported to app/schemas/ (room.schemaLocation in the Gradle
  * KSP args) so future migrations can be validated against history.
  */
@@ -27,7 +30,7 @@ import com.cinedrive.tv.data.db.entity.VolumeEntity
         MediaItemEntity::class,
         ShowEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -41,5 +44,12 @@ abstract class CineDriveDatabase : RoomDatabase() {
 
     companion object {
         const val NAME = "cinedrive.db"
+
+        /** v1 → v2: auto-thumbnail column on media_items. */
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE media_items ADD COLUMN thumbPath TEXT")
+            }
+        }
     }
 }

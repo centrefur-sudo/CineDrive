@@ -16,6 +16,15 @@ data class PlaybackSlice(
     val resumePositionMs: Long,
     val watched: Boolean,
     val lastPlayedAtMs: Long?,
+    /** Generated frame from the previous row — re-scans must not lose it. */
+    val thumbPath: String?,
+)
+
+/** Files still missing card art after sidecar/NFO binding (thumb pass input). */
+data class ThumbSlice(
+    val id: Long,
+    val path: String,
+    val sizeBytes: Long,
 )
 
 /** Lightweight count projection for the smoke screen / library stats. */
@@ -28,7 +37,7 @@ interface MediaItemDao {
     suspend fun upsertAll(items: List<MediaItemEntity>)
 
     @Query(
-        "SELECT id, path, resumePositionMs, watched, lastPlayedAtMs " +
+        "SELECT id, path, resumePositionMs, watched, lastPlayedAtMs, thumbPath " +
             "FROM media_items WHERE volumeUuid = :volumeUuid"
     )
     suspend fun playbackSlices(volumeUuid: String): List<PlaybackSlice>
@@ -103,6 +112,17 @@ interface MediaItemDao {
 
     @Query("UPDATE media_items SET watched = :watched WHERE id = :id")
     suspend fun setWatched(id: Long, watched: Boolean)
+
+    /** Thumbnail write path — one row per extracted frame, UI Flow re-emits. */
+    @Query("UPDATE media_items SET thumbPath = :thumbPath WHERE id = :id")
+    suspend fun setThumbPath(id: Long, thumbPath: String)
+
+    /** Titles with no sidecar/NFO art and no generated frame yet. */
+    @Query(
+        "SELECT id, path, sizeBytes FROM media_items " +
+            "WHERE volumeUuid = :volumeUuid AND posterPath IS NULL AND thumbPath IS NULL"
+    )
+    suspend fun missingArtSlices(volumeUuid: String): List<ThumbSlice>
 
     /**
      * Prune rows for files that vanished from the drive: anything not touched

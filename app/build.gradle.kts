@@ -34,6 +34,15 @@ val keystoreProps = Properties().apply {
     if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
 }
 
+// ── ABI selection ───────────────────────────────────────────────────────────
+// Default: the four common TV/emulator ABIs. The CI pipeline (and any
+// one-off build) can narrow this to the target box via
+//   ./gradlew assembleRelease -Pcinedrive.abiList=armeabi-v7a
+// With a single ABI there is exactly one split APK and no universal APK.
+val abiList: List<String> = providers.gradleProperty("cinedrive.abiList")
+    .orNull?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }
+    ?: listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+
 android {
     namespace = "com.cinedrive.tv"
 
@@ -54,12 +63,12 @@ android {
         // nothing in this app needs 35 runtime semantics.
         targetSdk = 34
 
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.1.0"
 
-        // LibVLC natives: keep the four common TV/emulator ABIs only.
+        // LibVLC natives: [abiList] (see above).
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+            abiFilters += abiList
         }
     }
 
@@ -97,14 +106,14 @@ android {
         }
     }
 
-    // Sideload-friendly output: one universal APK plus one slim APK per ABI
-    // (the universal one carries ~80 MB of LibVLC natives for all ABIs).
+    // Sideload-friendly output: one slim APK per ABI plus a universal one
+    // when several ABIs are built. A single-ABI build IS the APK.
     splits {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
-            isUniversalApk = true
+            include(*abiList.toTypedArray())
+            isUniversalApk = abiList.size > 1
         }
     }
 

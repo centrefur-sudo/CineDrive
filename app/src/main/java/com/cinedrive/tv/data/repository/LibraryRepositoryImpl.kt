@@ -5,6 +5,7 @@ import com.cinedrive.tv.data.db.dao.ShowDao
 import com.cinedrive.tv.data.db.entity.MediaItemEntity
 import com.cinedrive.tv.data.db.entity.ShowEntity
 import com.cinedrive.tv.data.indexer.MediaIndexer
+import com.cinedrive.tv.data.thumbs.VideoThumbnailer
 import com.cinedrive.tv.domain.model.MediaItem
 import com.cinedrive.tv.domain.model.MediaItemKind
 import com.cinedrive.tv.domain.model.Show
@@ -28,6 +29,7 @@ class LibraryRepositoryImpl @Inject constructor(
     private val indexer: MediaIndexer,
     private val mediaItemDao: MediaItemDao,
     private val showDao: ShowDao,
+    private val thumbnailer: VideoThumbnailer,
 ) : LibraryRepository {
 
     override suspend fun indexVolume(
@@ -89,6 +91,17 @@ class LibraryRepositoryImpl @Inject constructor(
     override suspend fun markWatched(mediaItemId: Long, watched: Boolean) {
         mediaItemDao.setWatched(mediaItemId, watched)
     }
+
+    override suspend fun generateMissingThumbnails(volumeUuid: String): Int {
+        val targets = mediaItemDao.missingArtSlices(volumeUuid)
+        var generated = 0
+        for (slice in targets) {
+            val thumb = thumbnailer.thumbnailFor(slice.path, slice.sizeBytes) ?: continue
+            mediaItemDao.setThumbPath(slice.id, thumb)
+            generated++
+        }
+        return generated
+    }
 }
 
 /** Entity → domain mapping. Kind strings are written by [MediaIndexer]. */
@@ -111,6 +124,7 @@ internal fun MediaItemEntity.toDomain(): MediaItem = MediaItem(
     subtitles = subtitles,
     posterPath = posterPath,
     fanartPath = fanartPath,
+    thumbPath = thumbPath,
     nfoPath = nfoPath,
     resumePositionMs = resumePositionMs,
     watched = watched,

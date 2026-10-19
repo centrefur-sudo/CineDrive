@@ -165,6 +165,7 @@ class MediaIndexer @Inject constructor(
                 subtitles = file.subtitles,
                 posterPath = file.posterPath ?: nfo?.thumb,
                 fanartPath = file.fanartPath,
+                thumbPath = previous?.thumbPath,
                 nfoPath = file.nfoPath,
                 resumePositionMs = previous?.resumePositionMs ?: 0,
                 watched = previous?.watched ?: false,

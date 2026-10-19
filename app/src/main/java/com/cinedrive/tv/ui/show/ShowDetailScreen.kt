@@ -137,7 +137,8 @@ fun ShowDetailScreen(
                             title = episode.title,
                             badge = episodeBadge(episode.season, episode.episode),
                             artModel = artModel(
-                                episode.fanartPath
+                                episode.thumbPath
+                                    ?: episode.fanartPath
                                     ?: episode.posterPath
                                     ?: show?.fanartPath
                                     ?: show?.posterPath

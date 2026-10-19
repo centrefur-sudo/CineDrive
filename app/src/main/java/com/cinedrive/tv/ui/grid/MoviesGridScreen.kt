@@ -104,7 +104,9 @@ fun MoviesGridScreen(
                 items(movies, key = { it.id }) { item ->
                     PosterCard(
                         title = item.title,
-                        artModel = artModel(item.posterPath ?: item.fanartPath),
+                        artModel = artModel(
+                            item.posterPath ?: item.thumbPath ?: item.fanartPath
+                        ),
                         watched = item.watched,
                         progress = progressFraction(item.resumePositionMs, item.runtimeMin),
                         onClick = { onOpenItem(item.id) },

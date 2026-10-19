@@ -50,6 +50,11 @@ class LibVlcPlayerEngine(
     /** Resume point, applied once LibVLC reports the real duration. */
     private var pendingStartMs = 0L
 
+    /** English-default audio: applied once per session, never after the user
+     *  picked a track themselves in quick settings. */
+    private var audioDefaultApplied = false
+    private var userAudioOverride = false
+
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
@@ -64,6 +69,8 @@ class LibVlcPlayerEngine(
 
     override fun prepare(uri: String, subtitleFiles: List<String>, startPositionMs: Long) {
         pendingStartMs = startPositionMs
+        audioDefaultApplied = false
+        userAudioOverride = false
         val mediaUri = if (uri.contains("://")) Uri.parse(uri) else Uri.fromFile(File(uri))
         val media = Media(libVlc, mediaUri)
         media.setHWDecoderEnabled(true, false)
@@ -131,6 +138,7 @@ class LibVlcPlayerEngine(
     }
 
     override fun setAudioTrack(trackId: Int) {
+        userAudioOverride = true
         mediaPlayer.setAudioTrack(trackId)
         _state.update { it.copy(selectedAudioTrack = trackId.takeIf { id -> id >= 0 }) }
     }
@@ -260,6 +268,27 @@ class LibVlcPlayerEngine(
                     ?: (mediaPlayer.getSpuDelay() / 1000),
             )
         }
+        maybeApplyDefaultAudioTrack(audio)
+    }
+
+    /**
+     * Multi-audio files: default to the English track when the container
+     * labels one ("English", "ENG", "Track 2 - [English]" …). Runs once per
+     * session, before any user choice — a manual pick from quick settings
+     * sets [userAudioOverride] and is never second-guessed.
+     */
+    private fun maybeApplyDefaultAudioTrack(audio: List<TrackInfo>) {
+        if (audioDefaultApplied || userAudioOverride || audio.isEmpty()) return
+        // setAudioTrack() is a silent no-op before playback starts — wait for
+        // the Playing event (refreshTracks re-runs on it and on every
+        // ESAdded/ESDeleted) instead of burning the once-per-session flag.
+        if (!mediaPlayer.isPlaying) return
+        audioDefaultApplied = true
+        val preferred = preferredEnglishTrack(audio) ?: return
+        if (preferred.id != mediaPlayer.getAudioTrack()) {
+            mediaPlayer.setAudioTrack(preferred.id)
+            _state.update { it.copy(selectedAudioTrack = preferred.id) }
+        }
     }
 
     private fun applyPendingStart() {
@@ -275,10 +304,19 @@ class LibVlcPlayerEngine(
         }
     }
 
-    private companion object {
-        /** ±60 s delay window, 100 ms per nudge — plenty for lip-sync fixes. */
-        const val DELAY_MIN_MS = -60_000L
-        const val DELAY_MAX_MS = 60_000L
+    companion object {
+        private const val DELAY_MIN_MS = -60_000L
+        private const val DELAY_MAX_MS = 60_000L
+
+        /** Substring (case-insensitive) that identifies English track labels:
+         *  covers "English", "ENG", "Track 1 - [English] (AC3 5.1)"… —
+         *  no false hits in real container labels ("Japanese", "Deutsch",
+         *  "Français", "Commentary"…). */
+        const val ENGLISH_TRACK_HINT = "eng"
+
+        /** Pure decision: which listed track should be the default. */
+        fun preferredEnglishTrack(tracks: List<TrackInfo>): TrackInfo? =
+            tracks.firstOrNull { it.name.contains(ENGLISH_TRACK_HINT, ignoreCase = true) }
     }
 
     /**

@@ -213,6 +213,16 @@ class LibrarySyncController @Inject constructor(
                     episodes = result.episodes,
                 )
             )
+            // Auto-frames for titles without sidecar/NFO art. Runs on the
+            // controller scope OUTSIDE the sync gate, so the next volume can
+            // index immediately while frames trickle in (one DB write per
+            // frame → the browse Flows repopulate cards live).
+            scope.launch {
+                runCatching { library.generateMissingThumbnails(volume.uuid) }
+                    .onFailure { error ->
+                        android.util.Log.w("LibrarySync", "thumbnail pass failed", error)
+                    }
+            }
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (error: Throwable) {

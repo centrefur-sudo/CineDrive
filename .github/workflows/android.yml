@@ -37,23 +37,26 @@ jobs:
       - name: Unit tests (JVM)
         run: ./gradlew :app:testDebugUnitTest --stacktrace
 
-      - name: Assemble debug APKs (per-ABI + universal)
-        run: ./gradlew :app:assembleDebug --stacktrace
+      # armv7a-only: the user's TV box is 32-bit ARM. One signed APK per
+      # build — fast CI, small artifact. Other ABIs: build locally with
+      # -Pcinedrive.abiList=<list> (default is the full set).
+      - name: Assemble debug APK (armeabi-v7a)
+        run: ./gradlew :app:assembleDebug -Pcinedrive.abiList=armeabi-v7a --stacktrace
 
       # Signed with keystore/cinedrive-release.keystore (committed, private
       # repo). Signature stays constant across runs, so new builds install
       # OVER old ones without wiping the library / watch progress.
-      - name: Assemble release APKs (signed, per-ABI + universal)
-        run: ./gradlew :app:assembleRelease --stacktrace
+      - name: Assemble release APK (signed, armeabi-v7a)
+        run: ./gradlew :app:assembleRelease -Pcinedrive.abiList=armeabi-v7a --stacktrace
 
-      - name: Verify release APKs are signed
+      - name: Verify release APK is signed
         run: |
           UNSIGNED=$(find app/build/outputs/apk -name "*-unsigned.apk" | wc -l)
           if [ "$UNSIGNED" -ne 0 ]; then
             echo "::error::$UNSIGNED unsigned APK(s) produced - signing config failed"
             exit 1
           fi
-          echo "Signed release APKs:"
+          echo "Signed release APK:"
           find app/build/outputs/apk -name "*-release.apk" -exec ls -lh {} \;
 
       - name: Upload test reports on failure
@@ -88,24 +91,15 @@ jobs:
           path: app/schemas/
           if-no-files-found: ignore
 
-      - name: Job summary — which APK for which box
+      - name: Job summary — APK for the armv7a box
         run: |
           cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
-          ## CineDrive release APKs (signed)
+          ## CineDrive release APK (signed, armeabi-v7a)
 
-          **armv7a TV box (32-bit) → `app-armeabi-v7a-release.apk`** ← use this one
+          **Install on your armv7a TV box → `app-armeabi-v7a-release.apk`**
 
-          | File | Use on |
-          |------|--------|
-          | app-armeabi-v7a-release.apk | 32-bit ARM TV boxes (armv7a) |
-          | app-arm64-v8a-release.apk | 64-bit ARM boxes / sticks |
-          | app-x86_64-release.apk | x86_64 boxes / emulators |
-          | app-universal-release.apk | any device (all ABIs, large) |
-
-          Install: copy the APK to USB → on the box allow *Unknown sources*
-          for your file manager (Settings → Device Preferences → Security &
-          Restrictions — no root needed on stock Android TV) → open the APK.
-
-          Updates install over the previous version — same signature, library
-          and watch progress are preserved.
+          Copy to USB → allow *Unknown sources* for your file manager
+          (Settings → Device Preferences → Security & Restrictions — no root)
+          → open the APK. Updates install over the previous build; the
+          library and watch progress are preserved.
           EOF

@@ -26,6 +26,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): CineDriveDatabase =
         Room.databaseBuilder(context, CineDriveDatabase::class.java, CineDriveDatabase.NAME)
+            .addMigrations(CineDriveDatabase.MIGRATION_1_2)
             .build()
 
     @Provides

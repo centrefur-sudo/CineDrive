@@ -43,6 +43,8 @@ data class MediaItem(
     /** Local poster file, or first .nfo <thumb> URL as a fallback. */
     val posterPath: String? = null,
     val fanartPath: String? = null,
+    /** Auto-extracted video frame for titles without sidecar/NFO art. */
+    val thumbPath: String? = null,
     val nfoPath: String? = null,
     /** Resume offset in ms; 0 = never started / finished. */
     val resumePositionMs: Long = 0,

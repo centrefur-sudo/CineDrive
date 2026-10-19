@@ -78,4 +78,13 @@ interface LibraryRepository {
 
     /** Toggle the watched flag (user action or the 90 % rule). */
     suspend fun markWatched(mediaItemId: Long, watched: Boolean)
+
+    /**
+     * Extract video frames for titles that ended up without card art
+     * (no poster.jpg, no .nfo thumb). Runs after indexing; each result is
+     * written immediately so the browse Flows populate card by card.
+     *
+     * @return number of thumbnails generated in this pass.
+     */
+    suspend fun generateMissingThumbnails(volumeUuid: String): Int
 }

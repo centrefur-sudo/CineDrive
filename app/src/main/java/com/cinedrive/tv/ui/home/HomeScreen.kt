@@ -187,7 +187,11 @@ private fun LibraryRows(
                                 title = item.title,
                                 subtitle = item.showTitle ?: item.year?.toString(),
                                 badge = episodeBadge(item.season, item.episode),
-                                artModel = artModel(item.fanartPath ?: item.posterPath),
+                                artModel = artModel(
+                                    item.thumbPath
+                                        ?: item.fanartPath
+                                        ?: item.posterPath
+                                ),
                                 progress = progressFraction(item.resumePositionMs, item.runtimeMin),
                                 width = 220.dp,
                                 onClick = { onOpenItem(item.id) },
@@ -207,7 +211,11 @@ private fun LibraryRows(
                         items(movies, key = { it.id }) { item ->
                             PosterCard(
                                 title = item.title,
-                                artModel = artModel(item.posterPath ?: item.fanartPath),
+                                artModel = artModel(
+                                    item.posterPath
+                                        ?: item.thumbPath
+                                        ?: item.fanartPath
+                                ),
                                 watched = item.watched,
                                 progress = progressFraction(item.resumePositionMs, item.runtimeMin),
                                 width = 132.dp,

@@ -22,14 +22,18 @@ via LibVLC's bundled codecs — no server, no transcoding, no accounts.
 | 4 | ✅ | TV browse UI: permission gate, home rows (continue-watching / movies / TV), movie & TV grids, show→season→episode drill-down, NFO detail pages, D-pad focus cards, cross-volume queries, LibrarySyncController |
 | 5 | ✅ | Player: LibVLC 3.7.7 behind a `PlayerEngine` interface, D-pad transport (±10 s / ±1 min, long-press OK = settings), quick settings (audio/subtitle tracks, ±100 ms offsets), 90 % watched rule, auto-next-episode, resume from Room, FLAG_KEEP_SCREEN_ON |
 
+**v1.1.0 additions:** auto-thumbnails — a frame is pulled from every video
+that has no sidecar poster / .nfo thumb, cached app-privately, and used on
+all cards; English-default audio — multi-audio files start on the labelled
+English track unless you pick another one in quick settings. CI builds the
+**armeabi-v7a** APK only (the target box); other ABIs: `./gradlew
+assembleRelease -Pcinedrive.abiList=arm64-v8a,x86_64` locally.
+
 ## Install on a TV box
 
 1. Open the latest **android-ci** run on GitHub → **Artifacts** → download `cinedrive-release-apks`.
-2. Pick the right APK for the box:
-   - **armv7a box (32-bit ARM)** → `app-armeabi-v7a-release.apk`
-   - 64-bit ARM box → `app-arm64-v8a-release.apk`
-   - x86_64 box / emulator → `app-x86_64-release.apk`
-   - unsure → `app-universal-release.apk` (works everywhere, largest)
+2. CI builds **`app-armeabi-v7a-release.apk`** only (the armv7a target box).
+   For other devices build locally with `-Pcinedrive.abiList=arm64-v8a` etc.
 3. Copy it to a USB stick, plug it into the box.
 4. On the box allow sideloading — **no root required** on stock Android TV:
    Settings → Device Preferences → Security & Restrictions → **Unknown sources** →
