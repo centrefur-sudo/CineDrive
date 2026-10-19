@@ -116,3 +116,6 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+# Room Gradle plugin: the supported way to export schema JSON with Room 2.8 +
+# KSP2 (the raw "room.schemaLocation" ksp arg is no longer honoured there).
+room = { id = "androidx.room", version.ref = "room" }

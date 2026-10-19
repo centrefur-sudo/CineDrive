@@ -18,6 +18,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.room)
 }
 
 android {
@@ -103,10 +104,11 @@ android {
     }
 }
 
-ksp {
-    // Export Room schemas to app/schemas/ for migration tests (Step 3).
-    arg("room.schemaLocation", "$projectDir/schemas")
-    arg("room.incremental", "true")
+// Room Gradle plugin exports schema JSON to app/schemas/ — with Room 2.8 +
+// KSP2 this is the supported mechanism (the raw ksp "room.schemaLocation"
+// arg is ignored, as our CI build proved: empty schemas dir).
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
