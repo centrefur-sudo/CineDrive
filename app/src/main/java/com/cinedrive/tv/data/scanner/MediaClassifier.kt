@@ -28,28 +28,29 @@ object MediaClassifier {
     /** "S01E02", "S01.E02", "s01_e02", "S01E02A"… */
     private val SXXEXX = Regex(
         pattern = """S(\d{1,2})[\._\- ]?E(\d{1,3})""",
-        options = RegexOption.IGNORE_CASE,
+        options = setOf(RegexOption.IGNORE_CASE),
     )
 
     /** "1x02", "1x05b" (Babylon-5 style), requires separators around it. */
     private val NUMXNUM = Regex(
         pattern = """(?:^|[\._\- ])(\d{1,2})x(\d{1,3})(?:$|[\._\- ]|[A-Za-z])""",
-        options = RegexOption.IGNORE_CASE,
+        options = setOf(RegexOption.IGNORE_CASE),
     )
 
     /** Kodi season folder layout: "Season 1", "Season 01", "S01". */
     private val SEASON_DIR = Regex(
         pattern = """^(?:Season[\._\- ]*(\d{1,2})|S(\d{1,2}))$""",
-        options = RegexOption.IGNORE_CASE,
+        options = setOf(RegexOption.IGNORE_CASE),
     )
 
     /** Filename-based season/episode match, or null if not episode-shaped. */
     fun seasonEpisodeOf(fileNameWithoutExtension: String): Pair<Int, Int>? {
+        // \d{1,3} guarantees the groups parse; toInt() cannot throw here.
         SXXEXX.find(fileNameWithoutExtension)?.let { match ->
-            return match.groupValues[1].toIntOrNull() to match.groupValues[2].toIntOrNull()
+            return match.groupValues[1].toInt() to match.groupValues[2].toInt()
         }
         NUMXNUM.find(fileNameWithoutExtension)?.let { match ->
-            return match.groupValues[1].toIntOrNull() to match.groupValues[2].toIntOrNull()
+            return match.groupValues[1].toInt() to match.groupValues[2].toInt()
         }
         return null
     }
