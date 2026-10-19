@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -71,10 +72,14 @@ private fun FocusCard(
     onClick: () -> Unit,
     aspectRatio: Float,
     modifier: Modifier = Modifier,
+    onFocused: (() -> Unit)? = null,
     content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    LaunchedEffect(focused) {
+        if (focused) onFocused?.invoke()
+    }
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.05f else 1f,
         animationSpec = tween(durationMillis = 120),
@@ -140,6 +145,9 @@ fun PosterCard(
 /**
  * 16:9 wide card used for continue-watching and episode grids. Shows an
  * optional "S01E04" badge and a secondary line under the artwork.
+ *
+ * [onFocused] fires when D-pad focus lands on the card — the show screen
+ * uses it to drive the focused-episode description panel.
  */
 @Composable
 fun WideCard(
@@ -151,11 +159,19 @@ fun WideCard(
     badge: String? = null,
     subtitle: String? = null,
     progress: Float? = null,
+    watched: Boolean = false,
+    onFocused: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.then(width?.let { Modifier.width(it) } ?: Modifier)) {
-        FocusCard(onClick = onClick, aspectRatio = 16f / 9f, modifier = Modifier.fillMaxWidth()) {
+        FocusCard(
+            onClick = onClick,
+            aspectRatio = 16f / 9f,
+            modifier = Modifier.fillMaxWidth(),
+            onFocused = onFocused,
+        ) {
             CardArtwork(model = artModel, fallbackIcon = Icons.Filled.OndemandVideo)
             badge?.let { Badge(it) }
+            if (watched) WatchedBadge()
             progress?.let { ProgressBar(it) }
         }
         Spacer(Modifier.height(8.dp))

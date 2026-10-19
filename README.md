@@ -22,6 +22,14 @@ via LibVLC's bundled codecs — no server, no transcoding, no accounts.
 | 4 | ✅ | TV browse UI: permission gate, home rows (continue-watching / movies / TV), movie & TV grids, show→season→episode drill-down, NFO detail pages, D-pad focus cards, cross-volume queries, LibrarySyncController |
 | 5 | ✅ | Player: LibVLC 3.7.7 behind a `PlayerEngine` interface, D-pad transport (±10 s / ±1 min, long-press OK = settings), quick settings (audio/subtitle tracks, ±100 ms offsets), 90 % watched rule, auto-next-episode, resume from Room, FLAG_KEEP_SCREEN_ON |
 
+**v1.2.0 additions:** shows are organised by their **folder name** (the file
+system is the source of truth; tvshow.nfo `<title>` only fills in for a blank
+folder name); **poster.jpg / fanart.jpg / cover.jpg in the show folder** are now
+picked up for the show card and header (previously only tvshow.nfo `<thumb>`
+was read); **episode descriptions** — the focused episode's .nfo `<plot>` shows
+in a fixed panel above the episode grid, plus watched checkmarks on episode
+cards.
+
 **v1.1.0 additions:** auto-thumbnails — a frame is pulled from every video
 that has no sidecar poster / .nfo thumb, cached app-privately, and used on
 all cards; English-default audio — multi-audio files start on the labelled

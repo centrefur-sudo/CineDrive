@@ -34,11 +34,18 @@ private data class Planned(
 
 /** Mutable metadata accumulator for one show folder (pass 2). */
 private class ShowAccumulator {
-    var title: String? = null
+    /** Folder name is the organising title (user preference); .nfo is the fallback. */
+    var nfoTitle: String? = null
     var plot: String? = null
     var year: Int? = null
-    var posterPath: String? = null
-    var fanartPath: String? = null
+    /** Art from the show folder itself (poster.jpg / fanart.jpg) — local files win. */
+    var localPoster: String? = null
+    var localFanart: String? = null
+    /** tvshow.nfo <thumb> (usually a URL) — second choice. */
+    var nfoThumb: String? = null
+    /** First episode's own artwork — last resort. */
+    var episodePoster: String? = null
+    var episodeFanart: String? = null
     var nfoPath: String? = null
 }
 
@@ -115,25 +122,30 @@ class MediaIndexer @Inject constructor(
             coroutineContext.ensureActive()
             val key = plan.decision.showFolderPath
                 ?: plan.file.path.substringBeforeLast('/', missingDelimiterValue = plan.file.path)
-            val acc = showAccumulators.getOrPut(key) { ShowAccumulator() }
+            val acc = showAccumulators.getOrPut(key) {
+                ShowAccumulator().also { fresh ->
+                    // One artwork probe per show folder: Kodi's poster.jpg /
+                    // fanart.jpg / cover.jpg in the show root. Local files
+                    // beat .nfo URLs on an offline TV box.
+                    fresh.localPoster = findArtwork(File(key), POSTER_ART_NAMES)
+                    fresh.localFanart = findArtwork(File(key), FANART_ART_NAMES)
+                }
+            }
 
             if (plan.file.showNfoPath != null && acc.nfoPath == null) {
                 acc.nfoPath = plan.file.showNfoPath
                 val showNfo = parseNfo(plan.file.showNfoPath)
                 if (showNfo?.kind == NfoKind.TV_SHOW) {
-                    acc.title = showNfo.title
+                    acc.nfoTitle = showNfo.title
                     acc.plot = showNfo.plot ?: showNfo.outline
                     acc.year = showNfo.year
-                    acc.posterPath = showNfo.thumb
+                    acc.nfoThumb = showNfo.thumb
                 }
             }
-            if (acc.title == null && plan.decision.showTitle != null) {
-                acc.title = plan.decision.showTitle
-            }
-            // First episode's local artwork as a fallback (path-sorted scan
-            // order makes this deterministic).
-            if (acc.posterPath == null) acc.posterPath = plan.file.posterPath
-            if (acc.fanartPath == null) acc.fanartPath = plan.file.fanartPath
+            // First episode's local artwork as the last-resort fallback
+            // (path-sorted scan order makes this deterministic).
+            if (acc.episodePoster == null) acc.episodePoster = plan.file.posterPath
+            if (acc.episodeFanart == null) acc.episodeFanart = plan.file.fanartPath
         }
 
         // Pass 3: build entity rows with playback-state merge.
@@ -177,14 +189,18 @@ class MediaIndexer @Inject constructor(
         }
 
         val showEntities = showAccumulators.map { (folder, acc) ->
+            // Shows are ORGANISED BY FOLDER NAME (user preference): the file
+            // system is the source of truth, tvshow.nfo <title> only fills in
+            // for a blank/unusable folder name.
+            val folderTitle = cleanTitle(File(folder).name)
             ShowEntity(
                 volumeUuid = volume.uuid,
                 folderPath = folder,
-                title = acc.title ?: cleanTitle(File(folder).name),
+                title = folderTitle.ifBlank { acc.nfoTitle ?: "Unknown show" },
                 plot = acc.plot,
                 year = acc.year,
-                posterPath = acc.posterPath,
-                fanartPath = acc.fanartPath,
+                posterPath = acc.localPoster ?: acc.nfoThumb ?: acc.episodePoster,
+                fanartPath = acc.localFanart ?: acc.episodeFanart,
                 nfoPath = acc.nfoPath,
                 lastIndexedAtMs = scanStartedAt,
             )
@@ -231,4 +247,21 @@ class MediaIndexer @Inject constructor(
             .trim()
             .trim { it == '-' }
             .trim()
+
+    private fun findArtwork(dir: File, names: Set<String>): String? = try {
+        dir.listFiles()
+            ?.firstOrNull {
+                it.isFile && it.extension.lowercase() in IMAGE_EXTS &&
+                    it.nameWithoutExtension.lowercase() in names
+            }
+            ?.absolutePath
+    } catch (error: Throwable) {
+        null // drive yanked mid-scan
+    }
+
+    private companion object {
+        val IMAGE_EXTS = setOf("jpg", "jpeg", "png", "webp")
+        val POSTER_ART_NAMES = setOf("poster", "cover", "folder")
+        val FANART_ART_NAMES = setOf("fanart", "backdrop")
+    }
 }

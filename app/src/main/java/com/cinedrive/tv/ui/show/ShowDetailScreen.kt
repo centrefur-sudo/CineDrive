@@ -24,8 +24,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Button
+import com.cinedrive.tv.domain.model.MediaItem
 import com.cinedrive.tv.ui.components.Backdrop
 import com.cinedrive.tv.ui.components.WideCard
 import com.cinedrive.tv.ui.components.artModel
@@ -63,6 +67,17 @@ fun ShowDetailScreen(
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val show = ui.show
+
+    // D-pad focus drives the description panel: whichever episode card is
+    // focused gets its .nfo plot shown below the season chips.
+    var focusedEpisodeId by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(ui.visibleEpisodes) {
+        if (focusedEpisodeId !in ui.visibleEpisodes.map { it.id }) {
+            focusedEpisodeId = ui.visibleEpisodes.firstOrNull()?.id
+        }
+    }
+    val focusedEpisode = ui.visibleEpisodes.firstOrNull { it.id == focusedEpisodeId }
+        ?: ui.visibleEpisodes.firstOrNull()
 
     Box(Modifier.fillMaxSize().background(Bg)) {
         Backdrop(
@@ -121,6 +136,11 @@ fun ShowDetailScreen(
                     )
                 }
 
+                focusedEpisode?.let { episode ->
+                    Spacer(Modifier.height(14.dp))
+                    EpisodeInfoPanel(episode)
+                }
+
                 Spacer(Modifier.height(14.dp))
 
                 LazyVerticalGrid(
@@ -147,6 +167,8 @@ fun ShowDetailScreen(
                                 episode.resumePositionMs,
                                 episode.runtimeMin,
                             ),
+                            watched = episode.watched,
+                            onFocused = { focusedEpisodeId = episode.id },
                             onClick = { onOpenEpisode(episode.id) },
                         )
                     }
@@ -164,6 +186,42 @@ private fun showMetaLine(year: Int?, ui: ShowDetailUiState): String =
         if (ui.seasons.any { it.season == 0 }) add("Specials")
         add("${ui.totalEpisodes} episode" + if (ui.totalEpisodes == 1) "" else "s")
     }.joinToString("   ·   ")
+
+/**
+ * Fixed-height description strip for the focused episode: badge + title on
+ * line one, the episode's .nfo <plot> beneath. Fixed height so the grid
+ * does not jump when focus moves between episodes with long/short plots.
+ */
+@Composable
+private fun EpisodeInfoPanel(episode: MediaItem) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(86.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Panel)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        val badge = episodeBadge(episode.season, episode.episode)
+        Text(
+            text = if (badge != null) "$badge  ·  ${episode.title}" else episode.title,
+            color = Accent,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = episode.plot?.takeIf { it.isNotBlank() }
+                ?: "No description for this episode — add a .nfo next to the file.",
+            color = TextSecondary,
+            fontSize = 12.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
 
 @Composable
 private fun SeasonChipRow(
