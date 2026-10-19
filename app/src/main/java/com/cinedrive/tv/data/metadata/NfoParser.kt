@@ -45,6 +45,10 @@ class NfoParser @Inject constructor() {
         var kind: NfoKind? = null
         var rootName: String? = null
         var rootDepth = -1
+        // True only when the matched root element was explicitly closed.
+        // kxml2 delivers END_DOCUMENT at EOF without throwing on truncated
+        // documents, so this flag is what rejects cut-off NFOs.
+        var rootClosed = false
 
         var title: String? = null
         var originalTitle: String? = null
@@ -136,7 +140,10 @@ class NfoParser @Inject constructor() {
 
                 XmlPullParser.END_TAG -> {
                     val name = parser.name
-                    if (name == rootName && parser.depth == rootDepth) break
+                    if (name == rootName && parser.depth == rootDepth) {
+                        rootClosed = true
+                        break
+                    }
                     when {
                         name == "rating" && ratingText != null -> {
                             val value = ratingText.toString()
@@ -187,7 +194,9 @@ class NfoParser @Inject constructor() {
             event = parser.next()
         }
 
-        if (kind == null) return null
+        // Reject documents whose root never closed (truncated files) as well
+        // as files without a recognized Kodi root element.
+        if (kind == null || !rootClosed) return null
 
         val resolvedYear = year
             ?: premiered?.let { YEAR_IN_IT.find(it)?.value?.toIntOrNull() }
