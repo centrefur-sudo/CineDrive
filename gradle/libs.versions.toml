@@ -3,20 +3,22 @@
 #
 # Version policy: stable, mutually-verified lines only.
 #   • AGP 8.10.1  ↔ Gradle 8.11.1+  ↔ JDK 17   (verified compatibility pair)
-#   • Kotlin 2.0.21 ↔ KSP 2.0.21-1.0.28        (last KSP1 build for 2.0.x,
-#                                                verified on Maven Central)
+#   • Kotlin 2.2.10 ↔ KSP 2.2.10-2.0.2 (KSP2)  — Kotlin 2.2 required because
+#     libvlc-all 3.7.7 ships kotlin-stdlib 2.2.10 and its compiler cannot
+#     read 2.2 metadata (verified on Maven Central / CI build #2)
+#   • Room 2.8.5 / Hilt 2.60.1                  — KSP2 + Kotlin 2.2 metadata ready
 #   • libvlc-all 3.7.7                          (latest stable, Maven Central)
 #   • androidx.tv:tv-material 1.0.1             (latest stable of Compose for TV)
 #
-# AGP 9.x exists but requires Gradle 9.5 + KGP 2.2.10 + KSP2 migration —
+# AGP 9.x exists but requires Gradle 9.5 + KSP2 migration —
 # no benefit for this feature set, deliberately not used.
 # ─────────────────────────────────────────────────────────────────────────────
 
 [versions]
 # Build tooling
 agp = "8.10.1"
-kotlin = "2.0.21"
-ksp = "2.0.21-1.0.28"
+kotlin = "2.2.10"
+ksp = "2.2.10-2.0.2"
 
 # Compose
 composeBom = "2024.12.01"
@@ -30,11 +32,11 @@ coreKtx = "1.15.0"
 documentfile = "1.0.1"
 
 # Dependency injection
-hilt = "2.52"
+hilt = "2.60.1"
 hiltNavigationCompose = "1.2.0"
 
 # Persistence
-room = "2.6.1"
+room = "2.8.5"
 datastore = "1.1.1"
 
 # Playback engine
