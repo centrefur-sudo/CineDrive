@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TV launcher banner (320x180 standard). Placeholder — replaced with real
+     branding assets in Step 4. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <!-- Backdrop -->
+    <path
+        android:fillColor="#0B0E14"
+        android:pathData="M0,0h320v180h-320z" />
+
+    <!-- Subtle lower band -->
+    <path
+        android:fillColor="#141A28"
+        android:pathData="M0,140h320v40h-320z" />
+
+    <!-- Accent underline -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M40,150h120v6h-120z" />
+
+    <!-- Play glyph -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M140,55l54,32l-54,32z" />
+</vector>

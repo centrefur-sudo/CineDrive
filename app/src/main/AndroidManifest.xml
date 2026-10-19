@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ═══ TV form factor ═══════════════════════════════════════════════ -->
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="true" />
+    <!-- Remote control is not a touchscreen: required=false keeps sideloading
+         onto odd AOSP boxes working. -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <!-- ═══ Storage permissions (strategy detailed in Step 2) ════════════ -->
+    <!-- Android 10–12: legacy external storage read. -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <!-- Android 13+ scoped media read (harmless on most TV builds, needed on
+         a few 13/14 AOSP ports that still enforce scoped media). -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- Full-drive access for USB playback — same approach as VLC/Kodi.
+         Sideloaded distribution, so Play policy restrictions don't apply.
+         Runtime gate via ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION (Step 2). -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+    <!-- Package visibility (Android 11+): allows resolveActivity() to verify
+         the "All files access" settings deep link before launching it. -->
+    <queries>
+        <intent>
+            <action android:name="android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".CineDriveApp"
+        android:allowBackup="false"
+        android:banner="@drawable/banner"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CineDrive">
+
+        <!-- Single-activity Compose app. Landscape locked: TVs have one
+             orientation; configChanges prevents player recreation on
+             surface/HDMI handshakes. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
