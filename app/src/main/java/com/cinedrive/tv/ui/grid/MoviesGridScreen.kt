@@ -142,10 +142,11 @@ internal fun GridTopBar(title: String, count: Int, onBack: () -> Unit) {
 
 @Composable
 internal fun GridEmpty() {
+    // fillMaxSize fills the height remaining below the top bar inside the
+    // Column of each grid screen (weight() would need a ColumnScope here).
     androidx.compose.foundation.layout.Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f),
+            .fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         StateBlock(

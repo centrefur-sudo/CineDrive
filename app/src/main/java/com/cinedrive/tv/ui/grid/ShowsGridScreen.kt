@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -20,6 +22,7 @@ import com.cinedrive.tv.domain.repository.LibraryRepository
 import com.cinedrive.tv.sync.LibrarySyncController
 import com.cinedrive.tv.ui.components.PosterCard
 import com.cinedrive.tv.ui.components.artModel
+import com.cinedrive.tv.ui.theme.Bg
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
