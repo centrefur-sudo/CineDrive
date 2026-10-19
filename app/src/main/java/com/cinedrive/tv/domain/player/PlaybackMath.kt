@@ -85,7 +85,7 @@ object PlaybackMath {
             delayMs < 0 -> "-"
             else -> ""
         }
-        val tenths = abs(delayMs) / 100.0
-        return sign + "%.1f s".format(tenths)
+        val seconds = abs(delayMs) / 1000.0
+        return sign + "%.1f s".format(seconds)
     }
 }

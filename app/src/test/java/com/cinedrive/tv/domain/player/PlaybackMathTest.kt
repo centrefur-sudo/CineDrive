@@ -66,10 +66,9 @@ class PlaybackMathTest {
 
     @Test
     fun `normal resume inside the safe range passes through`() {
-        // 98 s of a 100 s file: above the 90 % rule this cannot survive a
-        // persist, but if it does (e.g. seek-back after watched), it is
-        // respected as-is — the tail-restart window starts at 98 s.
-        assertEquals(98_000, PlaybackMath.resumeStartPosition(98_000, 100_000))
+        // 90 s of a 100 s file: below the 2 s tail-restart window and under
+        // the seek-margin bound — respected as-is.
+        assertEquals(90_000, PlaybackMath.resumeStartPosition(90_000, 100_000))
     }
 
     // ── formatClock ─────────────────────────────────────────────────────
