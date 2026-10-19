@@ -22,7 +22,11 @@ plugins {
 
 android {
     namespace = "com.cinedrive.tv"
-    compileSdk = 35
+
+    // 36 is forced by libvlc-all 3.7.7 AAR metadata (it requires compileSdk
+    // >= 36). AGP 8.10.x compiles against android-36 without issues; runtime
+    // behaviour stays governed by targetSdk below.
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.cinedrive.tv"
