@@ -66,10 +66,10 @@ android {
         versionCode = 4
         versionName = "1.2.0"
 
-        // LibVLC natives: [abiList] (see above).
-        ndk {
-            abiFilters += abiList
-        }
+        // LibVLC native ABIs are selected ENTIRELY by splits.abi below —
+        // AGP rejects ndk.abiFilters overlapping the split filters
+        // ("Conflicting configuration: 'armeabi-v7a' in ndk abiFilters
+        // cannot be present when splits abi filters are set").
     }
 
     signingConfigs {
