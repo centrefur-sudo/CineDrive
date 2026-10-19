@@ -12,6 +12,8 @@
  *     Media3 backend can be added later without touching UI or domain code.
  */
 
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -28,7 +30,7 @@ plugins {
 // If the properties file is missing (e.g. a fresh fork), release silently
 // falls back to the debug key so the build still yields an installable APK.
 val keystorePropsFile = rootProject.file("keystore.properties")
-val keystoreProps = java.util.Properties().apply {
+val keystoreProps = Properties().apply {
     if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
 }
 
