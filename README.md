@@ -22,6 +22,29 @@ via LibVLC's bundled codecs — no server, no transcoding, no accounts.
 | 4 | ✅ | TV browse UI: permission gate, home rows (continue-watching / movies / TV), movie & TV grids, show→season→episode drill-down, NFO detail pages, D-pad focus cards, cross-volume queries, LibrarySyncController |
 | 5 | ✅ | Player: LibVLC 3.7.7 behind a `PlayerEngine` interface, D-pad transport (±10 s / ±1 min, long-press OK = settings), quick settings (audio/subtitle tracks, ±100 ms offsets), 90 % watched rule, auto-next-episode, resume from Room, FLAG_KEEP_SCREEN_ON |
 
+## Install on a TV box
+
+1. Open the latest **android-ci** run on GitHub → **Artifacts** → download `cinedrive-release-apks`.
+2. Pick the right APK for the box:
+   - **armv7a box (32-bit ARM)** → `app-armeabi-v7a-release.apk`
+   - 64-bit ARM box → `app-arm64-v8a-release.apk`
+   - x86_64 box / emulator → `app-x86_64-release.apk`
+   - unsure → `app-universal-release.apk` (works everywhere, largest)
+3. Copy it to a USB stick, plug it into the box.
+4. On the box allow sideloading — **no root required** on stock Android TV:
+   Settings → Device Preferences → Security & Restrictions → **Unknown sources** →
+   enable it for the file manager you use to open the APK.
+5. Open the APK from the file manager and install.
+
+**Signing.** Release APKs are signed with `keystore/cinedrive-release.keystore`
+(passwords in `keystore.properties`). Both are committed because this repo is
+private and CI must produce installable, upgrade-safe builds with zero manual
+steps. Consequences: every new build installs **over** the previous one without
+losing the library index or watch progress. If the repo ever goes public, move
+the keystore to encrypted GitHub secrets and strip it from git history.
+Debug builds (`com.cinedrive.tv.debug`) are separate apps with a per-run
+ephemeral key — for daily use install the **release** APK.
+
 ## Architecture
 
 ```

@@ -21,6 +21,17 @@ plugins {
     alias(libs.plugins.room)
 }
 
+// ── Release signing ─────────────────────────────────────────────────────────
+// keystore.properties (repo root) + keystore/cinedrive-release.keystore are
+// committed: this is a private, personal-build repository, and CI must be able
+// to produce installable, upgrade-safe release APKs with zero manual steps.
+// If the properties file is missing (e.g. a fresh fork), release silently
+// falls back to the debug key so the build still yields an installable APK.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = java.util.Properties().apply {
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.cinedrive.tv"
 
@@ -41,12 +52,23 @@ android {
         // nothing in this app needs 35 runtime semantics.
         targetSdk = 34
 
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         // LibVLC natives: keep the four common TV/emulator ABIs only.
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+        }
+    }
+
+    signingConfigs {
+        if (keystorePropsFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
         }
     }
 
@@ -56,12 +78,20 @@ android {
             isMinifyEnabled = false
         }
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // R8 stays off: the APK's bulk is LibVLC native libs (~35 MB per
+            // ABI), bytecode savings would be ~2 MB, and one less moving part
+            // keeps the signed-release CI lane deterministic.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = if (keystorePropsFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
