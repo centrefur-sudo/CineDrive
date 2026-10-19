@@ -75,14 +75,14 @@ object PlaybackMath {
         } else {
             "${magnitude / 1000} s"
         }
-        return (if (deltaMs < 0) "−" else "+") + label
+        return (if (deltaMs < 0) "-" else "+") + label
     }
 
     /** "+0.2 s" offset value for the quick-settings rows. */
     fun formatDelayLabel(delayMs: Long): String {
         val sign = when {
             delayMs > 0 -> "+"
-            delayMs < 0 -> "−"
+            delayMs < 0 -> "-"
             else -> ""
         }
         val tenths = abs(delayMs) / 100.0
