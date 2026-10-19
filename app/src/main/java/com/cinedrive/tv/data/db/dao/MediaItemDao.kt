@@ -61,6 +61,20 @@ interface MediaItemDao {
     )
     fun observeContinueWatching(volumeUuid: String): Flow<List<MediaItemEntity>>
 
+    /**
+     * Cross-volume queries for the browse UI (Step 4). The UI filters out
+     * rows whose volume is currently unmounted, so a yanked drive empties
+     * from the screen even before the next prune pass.
+     */
+    @Query("SELECT * FROM media_items WHERE kind = 'MOVIE' ORDER BY title COLLATE NOCASE")
+    fun observeAllMovies(): Flow<List<MediaItemEntity>>
+
+    @Query(
+        "SELECT * FROM media_items WHERE resumePositionMs > 0 AND watched = 0 " +
+            "ORDER BY lastPlayedAtMs DESC LIMIT 20"
+    )
+    fun observeAllContinueWatching(): Flow<List<MediaItemEntity>>
+
     @Query("SELECT * FROM media_items WHERE id = :id")
     suspend fun getById(id: Long): MediaItemEntity?
 

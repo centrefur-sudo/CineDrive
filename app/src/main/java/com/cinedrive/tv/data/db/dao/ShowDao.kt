@@ -15,6 +15,10 @@ interface ShowDao {
     @Query("SELECT * FROM shows WHERE volumeUuid = :volumeUuid ORDER BY title COLLATE NOCASE")
     fun observeByVolume(volumeUuid: String): Flow<List<ShowEntity>>
 
+    /** Cross-volume shows list for the browse UI (Step 4). */
+    @Query("SELECT * FROM shows ORDER BY title COLLATE NOCASE")
+    fun observeAll(): Flow<List<ShowEntity>>
+
     @Query("SELECT * FROM shows WHERE volumeUuid = :volumeUuid AND folderPath = :folderPath")
     suspend fun getByKey(volumeUuid: String, folderPath: String): ShowEntity?
 

@@ -49,6 +49,25 @@ interface LibraryRepository {
     /** Episodes of one show, ordered by season → episode → path. */
     fun observeEpisodesOfShow(volumeUuid: String, showFolderPath: String): Flow<List<MediaItem>>
 
+    // ── Cross-volume queries (browse UI, Step 4) ───────────────────────────
+    // The UI is responsible for hiding rows whose volume is not currently
+    // mounted; Room keeps them so progress survives a re-plug.
+
+    /** Every movie in the cache, alphabetically across all known volumes. */
+    fun observeAllMovies(): Flow<List<MediaItem>>
+
+    /** Every show in the cache, alphabetically across all known volumes. */
+    fun observeAllShows(): Flow<List<Show>>
+
+    /** Continue-watching across all volumes, newest play first, capped at 20. */
+    fun observeAllContinueWatching(): Flow<List<MediaItem>>
+
+    /** Live stream of one item — drives the detail page and the player. */
+    fun observeMediaItem(id: Long): Flow<MediaItem?>
+
+    /** One show row (volume UUID + folder path is the show identity). */
+    suspend fun show(volumeUuid: String, folderPath: String): Show?
+
     /** Items with saved progress that are not yet finished, newest first. */
     fun observeContinueWatching(volumeUuid: String): Flow<List<MediaItem>>
 

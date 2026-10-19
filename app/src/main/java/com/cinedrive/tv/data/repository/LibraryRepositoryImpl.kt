@@ -59,6 +59,21 @@ class LibraryRepositoryImpl @Inject constructor(
     override fun observeContinueWatching(volumeUuid: String): Flow<List<MediaItem>> =
         mediaItemDao.observeContinueWatching(volumeUuid).map { list -> list.map { it.toDomain() } }
 
+    override fun observeAllMovies(): Flow<List<MediaItem>> =
+        mediaItemDao.observeAllMovies().map { list -> list.map { it.toDomain() } }
+
+    override fun observeAllShows(): Flow<List<Show>> =
+        showDao.observeAll().map { list -> list.map { it.toDomain() } }
+
+    override fun observeAllContinueWatching(): Flow<List<MediaItem>> =
+        mediaItemDao.observeAllContinueWatching().map { list -> list.map { it.toDomain() } }
+
+    override fun observeMediaItem(id: Long): Flow<MediaItem?> =
+        mediaItemDao.observeById(id).map { it?.toDomain() }
+
+    override suspend fun show(volumeUuid: String, folderPath: String): Show? =
+        showDao.getByKey(volumeUuid, folderPath)?.toDomain()
+
     override suspend fun mediaItem(id: Long): MediaItem? =
         mediaItemDao.getById(id)?.toDomain()
 
