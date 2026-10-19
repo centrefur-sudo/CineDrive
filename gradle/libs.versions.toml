@@ -32,7 +32,9 @@ coreKtx = "1.15.0"
 documentfile = "1.0.1"
 
 # Dependency injection
-hilt = "2.60.1"
+# 2.57.2 = last Hilt line that accepts AGP 8.x (2.59+ hard-requires AGP 9)
+# while shipping Kotlin 2.2-metadata support needed by our Kotlin 2.2.10.
+hilt = "2.57.2"
 hiltNavigationCompose = "1.2.0"
 
 # Persistence
