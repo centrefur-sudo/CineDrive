@@ -63,8 +63,8 @@ android {
         // nothing in this app needs 35 runtime semantics.
         targetSdk = 34
 
-        versionCode = 4
-        versionName = "1.2.0"
+        versionCode = 5
+        versionName = "1.2.1"
 
         // LibVLC native ABIs are selected ENTIRELY by splits.abi below —
         // AGP rejects ndk.abiFilters overlapping the split filters

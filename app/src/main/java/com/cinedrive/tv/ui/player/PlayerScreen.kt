@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
@@ -80,6 +81,7 @@ fun PlayerScreen(
     val settingsOpen by viewModel.settingsOpen.collectAsStateWithLifecycle()
     val seekFeedback by viewModel.seekFeedback.collectAsStateWithLifecycle()
     val fatalError by viewModel.fatalError.collectAsStateWithLifecycle()
+    val hwEnabled by viewModel.hwEnabled.collectAsStateWithLifecycle()
 
     // Keep the panel awake during playback (spec: FLAG_KEEP_SCREEN_ON).
     val context = LocalContext.current
@@ -99,7 +101,17 @@ fun PlayerScreen(
     val overlayRowFocus = remember { FocusRequester() }
     var centerLongPress by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { rootFocus.requestFocus() }
+    // Focus robustness: requestFocus can silently fail while the first
+    // frame is still attaching to the window — without focus the D-pad
+    // (including OK = pause) is dead. Retry until the root really owns it.
+    var rootFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        repeat(FOCUS_RETRY_MAX) {
+            if (rootFocused) return@LaunchedEffect
+            runCatching { rootFocus.requestFocus() }
+            kotlinx.coroutines.delay(FOCUS_RETRY_DELAY_MS)
+        }
+    }
     LaunchedEffect(settingsOpen) {
         if (settingsOpen) {
             kotlinx.coroutines.delay(80)
@@ -209,6 +221,7 @@ fun PlayerScreen(
             .fillMaxSize()
             .background(Color.Black)
             .focusRequester(rootFocus)
+            .onFocusChanged { rootFocused = it.isFocused }
             .focusable()
             .onPreviewKeyEvent { event -> handleKey(event) },
     ) {
@@ -279,6 +292,13 @@ fun PlayerScreen(
                 )
                 Spacer(Modifier.height(12.dp))
                 Text("Press BACK to exit", color = Accent, fontSize = 12.sp)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "Tip: Menu (or hold OK) → Hardware decoding → Off helps on boxes where video freezes",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
 
@@ -291,11 +311,13 @@ fun PlayerScreen(
         ) {
             PlayerSettingsOverlay(
                 state = state,
+                hwEnabled = hwEnabled,
                 firstRowFocus = overlayRowFocus,
                 onAudioTrack = viewModel::setAudioTrack,
                 onSubtitleTrack = viewModel::setSubtitleTrack,
                 onNudgeAudio = viewModel::nudgeAudioDelay,
                 onNudgeSubtitle = viewModel::nudgeSubtitleDelay,
+                onToggleHw = viewModel::toggleHardwareDecoding,
             )
         }
 
@@ -433,3 +455,5 @@ private fun PlayerHud(
 private const val SEEK_SHORT_MS = 10_000L
 private const val SEEK_LONG_MS = 60_000L
 private const val SEEK_REPEAT_MS = 2_000L
+private const val FOCUS_RETRY_MAX = 25
+private const val FOCUS_RETRY_DELAY_MS = 200L

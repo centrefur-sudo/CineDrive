@@ -56,11 +56,13 @@ import com.cinedrive.tv.ui.theme.TextSecondary
 @Composable
 internal fun PlayerSettingsOverlay(
     state: PlaybackState,
+    hwEnabled: Boolean,
     firstRowFocus: FocusRequester,
     onAudioTrack: (Int) -> Unit,
     onSubtitleTrack: (Int) -> Unit,
     onNudgeAudio: (Long) -> Unit,
     onNudgeSubtitle: (Long) -> Unit,
+    onToggleHw: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -78,6 +80,18 @@ internal fun PlayerSettingsOverlay(
         )
         Spacer(Modifier.height(18.dp))
 
+        SectionLabel("Playback")
+        // Escape hatch for boxes whose MediaCodec wedges (frozen frame, dead
+        // clock): toggling re-opens the file at the current position with the
+        // other decoder, so the row doubles as an instant "unfreeze" button.
+        SettingsRow(
+            label = "Hardware decoding",
+            selected = hwEnabled,
+            trailing = if (hwEnabled) "On" else "Off",
+            onClick = onToggleHw,
+        )
+
+        Spacer(Modifier.height(18.dp))
         SectionLabel("Audio")
         if (state.audioTracks.isEmpty()) {
             HintLine("No audio track information yet")

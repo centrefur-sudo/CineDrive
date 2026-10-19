@@ -32,9 +32,14 @@ object PlayerModule {
                 // Lighter H.264 loop filter → measurably fewer dropped frames
                 // on low-end TV SoCs; invisible on healthy hardware.
                 "--avcodec-skiploopfilter=1",
-                // Prefer completeness over latency for local files.
-                "--no-drop-late-frames",
-                "--no-skip-frames",
+                // NOTE: "--no-drop-late-frames" / "--no-skip-frames" were
+                // deliberately REMOVED (v1.2.1). With frame dropping fully
+                // disabled a slow MediaCodec decoder builds unbounded
+                // latency and the pipeline hard-freezes (stuck frame, dead
+                // clock, pause unresponsive) — the exact failure seen on
+                // armv7 boxes. VLC's adaptive late-frame dropping is the
+                // correct default; scrubbing stays fine via the explicit
+                // seek guards in the engine.
             ),
         )
 }

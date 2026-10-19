@@ -58,9 +58,17 @@ interface PlayerEngine {
      * attached (attach order with [attachVideo] does not matter).
      * External subtitle files are attached as side-car tracks; the first
      * (best, per the Step 2 scanner ordering) is auto-selected.
-     * [startPositionMs] is applied once the real duration is known.
+     * [startPositionMs] is applied only once the player reports Playing AND
+     * seekable — seeking earlier wedges MediaCodec on several TV SoCs.
+     * [hwDecoder] = false forces software decoding (escape hatch for
+     * devices whose MediaCodec stalls).
      */
-    fun prepare(uri: String, subtitleFiles: List<String> = emptyList(), startPositionMs: Long = 0)
+    fun prepare(
+        uri: String,
+        subtitleFiles: List<String> = emptyList(),
+        startPositionMs: Long = 0,
+        hwDecoder: Boolean = true,
+    )
 
     fun play()
     fun pause()

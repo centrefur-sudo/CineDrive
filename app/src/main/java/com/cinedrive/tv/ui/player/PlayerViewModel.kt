@@ -3,6 +3,7 @@ package com.cinedrive.tv.ui.player
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cinedrive.tv.data.prefs.PlaybackPrefs
 import com.cinedrive.tv.domain.model.MediaItem
 import com.cinedrive.tv.domain.model.MediaItemKind
 import com.cinedrive.tv.domain.player.EpisodeNavigator
@@ -45,6 +46,7 @@ class PlayerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: LibraryRepository,
     engineFactory: PlayerEngine.Factory,
+    private val playbackPrefs: PlaybackPrefs,
 ) : ViewModel() {
 
     private val itemId: Long = checkNotNull(savedStateHandle["itemId"])
@@ -68,6 +70,10 @@ class PlayerViewModel @Inject constructor(
     private val _fatalError = MutableStateFlow<String?>(null)
     val fatalError: StateFlow<String?> = _fatalError.asStateFlow()
 
+    /** Hardware-decoding switch (escape hatch for wedged MediaCodec). */
+    private val _hwEnabled = MutableStateFlow(true)
+    val hwEnabled: StateFlow<Boolean> = _hwEnabled.asStateFlow()
+
     /** Emits the next episode's itemId after a natural end. */
     private val _playNext = MutableSharedFlow<Long>(extraBufferCapacity = 1)
     val playNext: SharedFlow<Long> = _playNext.asSharedFlow()
@@ -81,6 +87,8 @@ class PlayerViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            val hw = playbackPrefs.hardwareDecoding.first()
+            _hwEnabled.value = hw
             val item = repository.mediaItem(itemId)
             if (item == null) {
                 _fatalError.value = "This item is no longer in the library."
@@ -93,6 +101,7 @@ class PlayerViewModel @Inject constructor(
                 uri = item.path,
                 subtitleFiles = item.subtitles,
                 startPositionMs = item.resumePositionMs,
+                hwDecoder = hw,
             )
         }
 
@@ -150,6 +159,26 @@ class PlayerViewModel @Inject constructor(
     fun nudgeAudioDelay(deltaMs: Long) = engine.nudgeAudioDelay(deltaMs)
 
     fun nudgeSubtitleDelay(deltaMs: Long) = engine.nudgeSubtitleDelay(deltaMs)
+
+    /**
+     * Hardware-decoding escape hatch: persists the choice, then restarts
+     * the session at the current position with the other decoder. Playback
+     * resumes automatically because the surface stays attached.
+     */
+    fun toggleHardwareDecoding() {
+        val newHw = !_hwEnabled.value
+        _hwEnabled.value = newHw
+        viewModelScope.launch {
+            playbackPrefs.setHardwareDecoding(newHw)
+            val item = _item.value ?: return@launch
+            engine.prepare(
+                uri = item.path,
+                subtitleFiles = item.subtitles,
+                startPositionMs = engine.state.value.positionMs,
+                hwDecoder = newHw,
+            )
+        }
+    }
 
     // ── HUD & settings overlay ──────────────────────────────────────────────
 
